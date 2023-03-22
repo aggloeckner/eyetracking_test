@@ -1,0 +1,13 @@
+{{ block title }}Ergebnisse{{ endblock }}
+{{ block content }}
+    <p>
+        {{ if player.id_in_group == 1 }}
+            Sie haben sich entschieden <strong>{{ group.kept }}</strong> zu behalten.
+        {{ else }}
+            Teilnehmender 1 hat entschieden <strong>{{ group.kept }}</strong> zu behalten, sodass
+            Sie <strong>{{ offer }}</strong> erhalten.
+        {{ endif }}
+
+        {{ next_button }}
+    </p>
+{{ endblock }}
