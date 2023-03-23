@@ -9,6 +9,7 @@ if sys.platform == "win32" and (3, 8, 0) <= sys.version_info < (3, 9, 0):
 import tobii_research as tr
 import time
 
+
 doc = """
 Your app description
 """
@@ -17,7 +18,7 @@ Your app description
 class C(BaseConstants):
     NAME_IN_URL = 'dictator_game'
     PLAYERS_PER_GROUP = None
-    NUM_ROUNDS = 2
+    NUM_ROUNDS = 1
     ENDOWMENT = cu(100)
 
 
@@ -31,8 +32,8 @@ class Group(BaseGroup):
         min=0,
         max=C.ENDOWMENT,
         label="Ich behalte",
+        initial=0,
     )
-
 
 class Player(BasePlayer):
     pass
@@ -51,7 +52,6 @@ def call_eyetracker_manager_example(eyetracker):
     import glob
     import tobii_research as tr
 
-    print("Test 0")
     try:
         os_type = platform.system()
         ETM_PATH = ''
@@ -60,7 +60,6 @@ def call_eyetracker_manager_example(eyetracker):
             print(glob.glob(os.environ["LocalAppData"] + "/Programs/TobiiProEyeTrackerManager/TobiiProEyeTrackerManager.exe")[0])
             ETM_PATH = glob.glob(os.environ["LocalAppData"] + "/Programs/TobiiProEyeTrackerManager/TobiiProEyeTrackerManager.exe")[0]
             DEVICE_ADDRESS = "tobii-ttp://IS404-100107417574"
-            print("Test C")
         elif os_type == "Linux":
             ETM_PATH = "TobiiProEyeTrackerManager"
             DEVICE_ADDRESS = "tobii-ttp://TOBII-IS404-100107417574"
@@ -165,15 +164,16 @@ class Calibration(Page):
     def vars_for_template(player):
         # Step 1: Find the eye tracker!
         found_eyetrackers = tr.find_all_eyetrackers()
-
+        global my_eyetracker
         my_eyetracker = found_eyetrackers[0]
+
         print("Address: " + my_eyetracker.address)
         print("Model: " + my_eyetracker.model)
         print("Name (It's OK if this is empty): " + my_eyetracker.device_name)
         print("Serial number: " + my_eyetracker.serial_number)
 
-        #Step 2: Calibrate the eye tracker
-        call_eyetracker_manager_example(my_eyetracker)
+        # Step 2: Calibrate the eye tracker
+        # call_eyetracker_manager_example(my_eyetracker)
         return
 
     @staticmethod
@@ -185,11 +185,11 @@ class Calibration(Page):
 class Introduction(Page):
     @staticmethod
     def before_next_page(player, timeout_happened):
-        #Step 4: Wrapping up!
+        # Step 4: Wrapping up!
         my_eyetracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
         print("Eye Tracking 1 finished")
 
-        #Step 3: Get gaze data!
+        # Step 3: Get gaze data!
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
         print("Eye Tracking 2 started")
 
@@ -204,11 +204,11 @@ class Offer(Page):
 
     @staticmethod
     def before_next_page(player, timeout_happened):
-        #Step 4: Wrapping up!
+        # Step 4: Wrapping up!
         my_eyetracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
         print("Eye Tracking 2 finished")
 
-        #Step 3: Get gaze data!
+        # Step 3: Get gaze data!
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
         print("Eye Tracking 3 started")
 
@@ -218,11 +218,11 @@ class ResultsWaitPage(WaitPage):
 
     @staticmethod
     def before_next_page(player, timeout_happened):
-        #Step 4: Wrapping up!
+        # Step 4: Wrapping up!
         my_eyetracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
         print("Eye Tracking 3 finished")
 
-        #Step 3: Get gaze data!
+        # Step 3: Get gaze data!
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
         print("Eye Tracking 4 started")
 
@@ -236,7 +236,7 @@ class Results(Page):
 
     @staticmethod
     def before_next_page(player, timeout_happened):
-        #Step 4: Wrapping up!
+        # Step 4: Wrapping up!
         my_eyetracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
         print("Eye Tracking 4 finished")
 
