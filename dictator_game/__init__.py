@@ -9,15 +9,6 @@ if sys.platform == "win32" and (3, 8, 0) <= sys.version_info < (3, 9, 0):
 import tobii_research as tr
 import time
 
-# Step 1: Find the eye tracker!
-found_eyetrackers = tr.find_all_eyetrackers()
-
-my_eyetracker = found_eyetrackers[0]
-print("Address: " + my_eyetracker.address)
-print("Model: " + my_eyetracker.model)
-print("Name (It's OK if this is empty): " + my_eyetracker.device_name)
-print("Serial number: " + my_eyetracker.serial_number)
-
 doc = """
 Your app description
 """
@@ -80,19 +71,13 @@ def call_eyetracker_manager_example(eyetracker):
             print("Unsupported...")
             exit(1)
 
-        print("Test 1")
+        print(os_type)
 
         mode = "displayarea"
 
-        print("Test 2")
-
         etm_p = subprocess.Popen([ETM_PATH,"--device-address=" + eyetracker.address, "--mode=" + mode],stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=False)
 
-        print("Test 3")
-
         stdout, stderr = etm_p.communicate()  # Returns a tuple with (stdout, stderr)
-
-        print("Test 4")
 
         if etm_p.returncode == 0:
             print("Eye Tracker Manager was called successfully!")
@@ -178,6 +163,15 @@ def gaze_data_callback(gaze_data):
 class Calibration(Page):
     @staticmethod
     def vars_for_template(player):
+        # Step 1: Find the eye tracker!
+        found_eyetrackers = tr.find_all_eyetrackers()
+
+        my_eyetracker = found_eyetrackers[0]
+        print("Address: " + my_eyetracker.address)
+        print("Model: " + my_eyetracker.model)
+        print("Name (It's OK if this is empty): " + my_eyetracker.device_name)
+        print("Serial number: " + my_eyetracker.serial_number)
+
         #Step 2: Calibrate the eye tracker
         call_eyetracker_manager_example(my_eyetracker)
         return
