@@ -1,0 +1,89 @@
+
+
+{{ block style }}
+    <style>
+        body {
+            background-color: black;
+        }
+        p {
+            color: black;
+        }
+        .dot {
+            display: none;
+            width: 15px;
+            height: 15px;
+            background-color: white;
+            position: fixed;
+        }
+    </style>{{ endblock }}
+
+
+{{ block content }}
+    <div style="width=100%; height=100%; margin=100px">
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <p>Text</p><br>
+        <div class="dot" id="dot"></div>
+    </div>
+{{ endblock }}
+
+{{ block script }}
+
+    <script>
+        function delay(milliseconds){
+            return new Promise(resolve => {
+                setTimeout(resolve, milliseconds);
+            });
+        }
+
+        window.onload = initialize;
+
+        function initialize() {
+
+            setTimeout(function (){
+                document.getElementById("dot").style.left = "50%";
+                document.getElementById("dot").style.top = "50%";
+                document.getElementById("dot").style.transform = "translate(-50%, -50%)";
+                document.getElementById("dot").style.display = "inline";
+            }, 1000);
+
+            setTimeout(function (){
+                document.getElementById("dot").style.left = "10%";
+                document.getElementById("dot").style.top = "10%";
+                document.getElementById("dot").style.transform = "translate(-50%, -50%)";
+                document.getElementById("dot").style.display = "inline";
+            }, 2000);
+
+            setTimeout(function (){
+                document.getElementById("dot").style.left = "10%";
+                document.getElementById("dot").style.top = "90%";
+                document.getElementById("dot").style.transform = "translate(-50%, -50%)";
+                document.getElementById("dot").style.display = "inline";
+            }, 3000);
+
+            setTimeout(function (){
+                document.getElementById("dot").style.left = "90%";
+                document.getElementById("dot").style.top = "10%";
+                document.getElementById("dot").style.transform = "translate(-50%, -50%)";
+                document.getElementById("dot").style.display = "inline";
+            }, 4000);
+
+            setTimeout(function (){
+                document.getElementById("dot").style.left = "90%";
+                document.getElementById("dot").style.top = "90%";
+                document.getElementById("dot").style.transform = "translate(-50%, -50%)";
+                document.getElementById("dot").style.display = "inline";
+            }, 5000);
+
+
+        }
+    </script>
+
+{{ endblock }}

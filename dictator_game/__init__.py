@@ -1,13 +1,12 @@
 from otree.api import *
 # top of the file
 import sys, asyncio
+import csv
+import tobii_research as tr
+import time
 
 if sys.platform == "win32" and (3, 8, 0) <= sys.version_info < (3, 9, 0):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-# Step 0: Preparations!
-import tobii_research as tr
-import time
 
 
 doc = """
@@ -72,7 +71,7 @@ def call_eyetracker_manager_example(eyetracker):
 
         print(os_type)
 
-        mode = "displayarea"
+        mode = "usercalibration"
 
         etm_p = subprocess.Popen([ETM_PATH,"--device-address=" + eyetracker.address, "--mode=" + mode],stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=False)
 
@@ -89,79 +88,66 @@ def call_eyetracker_manager_example(eyetracker):
             errlog = stderr
 
         for line in errlog.splitlines():
-            if line.startswith("ETM Error:"):
+            if line.startswith('ETM Error:'):
                 print(line)
 
     except Exception as e:
         print(e)
 
-def calibrate(eyetracker):
-    if eyetracker is None:
-        return
-
-    # <BeginExample>
-    import time
-    import tobii_research as tr
-
-    calibration = tr.ScreenBasedCalibration(eyetracker)
-
-    # Enter calibration mode.
-    calibration.enter_calibration_mode()
-    print("Entered calibration mode for eye tracker with serial number {0}.".format(eyetracker.serial_number))
-
-    # Define the points on screen we should calibrate at.
-    # The coordinates are normalized, i.e. (0.0, 0.0) is the upper left corner and (1.0, 1.0) is the lower right corner.
-    points_to_calibrate = [(0.5, 0.5), (0.1, 0.1), (0.1, 0.9), (0.9, 0.1), (0.9, 0.9)]
-
-    for point in points_to_calibrate:
-        print("Show a point on screen at {0}.".format(point))
-
-        # Wait a little for user to focus.
-        time.sleep(0.7)
-
-        print("Collecting data at {0}.".format(point))
-        if calibration.collect_data(point[0], point[1]) != tr.CALIBRATION_STATUS_SUCCESS:
-            # Try again if it didn't go well the first time.
-            # Not all eye tracker models will fail at this point, but instead fail on ComputeAndApply.
-            calibration.collect_data(point[0], point[1])
-
-    print("Computing and applying calibration.")
-    calibration_result = calibration.compute_and_apply()
-    print("Compute and apply returned {0} and collected at {1} points.".format(calibration_result.status, len(calibration_result.calibration_points)))
-
-    # Analyze the data and maybe remove points that weren't good.
-    recalibrate_point = (0.1, 0.1)
-    print("Removing calibration point at {0}.".format(recalibrate_point))
-    calibration.discard_data(recalibrate_point[0], recalibrate_point[1])
-
-    # Redo collection at the discarded point
-    print("Show a point on screen at {0}.".format(recalibrate_point))
-    calibration.collect_data(recalibrate_point[0], recalibrate_point[1])
-
-    # Compute and apply again.
-    print("Computing and applying calibration.")
-    calibration_result = calibration.compute_and_apply()
-    print("Compute and apply returned {0} and collected at {1} points.".
-    format(calibration_result.status, len(calibration_result.calibration_points)))
-
-    # See that you're happy with the result.
-
-    # The calibration is done. Leave calibration mode.
-    calibration.leave_calibration_mode()
-    print("Left calibration mode.")
-    # <EndExample>
+gaze_data_samples = []
 
 def gaze_data_callback(gaze_data):
-    # Print gaze points of left and right eye
-    print("Left eye: ({gaze_left_eye}) \t Right eye: ({gaze_right_eye})".format(
-        gaze_left_eye=gaze_data['left_gaze_point_on_display_area'],
-        gaze_right_eye=gaze_data['right_gaze_point_on_display_area']))
+    global gaze_data_samples
+    gaze_data_samples.append(gaze_data)
 
+def save_gaze_data(gaze_samples_list, player, pageName):
+    if not gaze_samples_list:
+        print("No gaze samples were collected. Skipping saving")
+        return
+    # To show what kinds of data are available in each sample's dictionary,
+    # we print the available keys here.
+    print("Sample dictionary keys:", gaze_samples_list[0].keys())
+    # This is meant to serve as a simple example of how you can save
+    # some of the gaze data - check the keys to see what else is available.
+
+    from pathlib import Path
+
+    file_name = "gaze_data/" + player.participant.label + "_gaze_data.csv"
+
+    if not Path(file_name).is_file():
+        file_handle = open(file_name, "w")
+        gaze_writer = csv.writer(file_handle)
+        gaze_writer.writerow(["id", "page", "time_seconds", "left_x", "left_y", "right_x", "right_y"])
+        file_handle.close()
+
+    file_handle = open(file_name, "a")
+    gaze_writer = csv.writer(file_handle)
+    start_time = gaze_samples_list[0]["system_time_stamp"]
+    for recording_dict in gaze_samples_list:
+        sample_time_from_start = recording_dict["system_time_stamp"] - start_time
+        # convert from microseconds to seconds
+        sample_time_from_start = sample_time_from_start / (10**(6))
+        # x is horizontal coordinate on the screen
+        # y is vertical coordinate on the screen
+        id = player.participant.label
+        page = pageName
+        left_x, left_y  = recording_dict["left_gaze_point_on_display_area"]
+        right_x, right_y = recording_dict["right_gaze_point_on_display_area"]
+        gaze_writer.writerow(
+            [id, page, sample_time_from_start, left_x, left_y, right_x, right_y]
+        )
+    file_handle.close()
 
 # PAGES
+
+class Introduction(Page):
+    None
+
 class Calibration(Page):
     @staticmethod
     def vars_for_template(player):
+        player.participant.label = str(player.participant.session.code) + "_" + str(player.participant.id_in_session)
+
         # Step 1: Find the eye tracker!
         found_eyetrackers = tr.find_all_eyetrackers()
         global my_eyetracker
@@ -182,17 +168,19 @@ class Calibration(Page):
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
         print("Eye Tracking 1 started")
 
-class Introduction(Page):
+
+class Instructions(Page):
     @staticmethod
     def before_next_page(player, timeout_happened):
         # Step 4: Wrapping up!
         my_eyetracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
         print("Eye Tracking 1 finished")
+        save_gaze_data(gaze_data_samples, player, "Instructions")
+        gaze_data_samples.clear()
 
         # Step 3: Get gaze data!
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
         print("Eye Tracking 2 started")
-
 
 class Offer(Page):
     form_model = 'group'
@@ -207,6 +195,8 @@ class Offer(Page):
         # Step 4: Wrapping up!
         my_eyetracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
         print("Eye Tracking 2 finished")
+        save_gaze_data(gaze_data_samples, player, "Offer")
+        gaze_data_samples.clear()
 
         # Step 3: Get gaze data!
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
@@ -221,6 +211,8 @@ class ResultsWaitPage(WaitPage):
         # Step 4: Wrapping up!
         my_eyetracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
         print("Eye Tracking 3 finished")
+        save_gaze_data(gaze_data_samples, player, "ResultsWaitPage")
+        gaze_data_samples.clear()
 
         # Step 3: Get gaze data!
         my_eyetracker.subscribe_to(tr.EYETRACKER_GAZE_DATA, gaze_data_callback, as_dictionary=True)
@@ -239,11 +231,14 @@ class Results(Page):
         # Step 4: Wrapping up!
         my_eyetracker.unsubscribe_from(tr.EYETRACKER_GAZE_DATA, gaze_data_callback)
         print("Eye Tracking 4 finished")
+        save_gaze_data(gaze_data_samples, player, "Results")
+        gaze_data_samples.clear()
 
 
 page_sequence = [
-    Calibration,
     Introduction,
+    Calibration,
+    Instructions,
     Offer,
     ResultsWaitPage,
     Results
