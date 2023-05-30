@@ -149,9 +149,9 @@ class Calibration(Page):
         player.participant.label = str(player.participant.session.code) + "_" + str(player.participant.id_in_session)
 
         # Step 1: Find the eye tracker!
-        found_eyetrackers = tr.find_all_eyetrackers()
+        address = "tobii-prp://TPNA1-030240041913"
         global my_eyetracker
-        my_eyetracker = found_eyetrackers[0]
+        my_eyetracker = tr.EyeTracker(address)
 
         print("Address: " + my_eyetracker.address)
         print("Model: " + my_eyetracker.model)
