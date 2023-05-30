@@ -35,7 +35,7 @@ class Group(BaseGroup):
     )
 
 class Player(BasePlayer):
-    pass
+    eyetrackerAddress = models.StringField(label="Eyetracker-Adresse:")
 
 # FUNCTIONS
 def set_payoffs(group: Group):
@@ -139,6 +139,9 @@ def save_gaze_data(gaze_samples_list, player, pageName):
     file_handle.close()
 
 # PAGES
+class EyetrackerAddress(Page):
+    form_model = 'player'
+    form_fields = ['eyetrackerAddress']
 
 class Introduction(Page):
     None
@@ -149,9 +152,8 @@ class Calibration(Page):
         player.participant.label = str(player.participant.session.code) + "_" + str(player.participant.id_in_session)
 
         # Step 1: Find the eye tracker!
-        address = "tobii-prp://TPNA1-030240041913"
         global my_eyetracker
-        my_eyetracker = tr.EyeTracker(address)
+        my_eyetracker = tr.EyeTracker(player.eyetrackerAddress)
 
         print("Address: " + my_eyetracker.address)
         print("Model: " + my_eyetracker.model)
@@ -159,7 +161,7 @@ class Calibration(Page):
         print("Serial number: " + my_eyetracker.serial_number)
 
         # Step 2: Calibrate the eye tracker
-        # call_eyetracker_manager_example(my_eyetracker)
+        call_eyetracker_manager_example(my_eyetracker)
         return
 
     @staticmethod
@@ -236,6 +238,7 @@ class Results(Page):
 
 
 page_sequence = [
+    EyetrackerAddress,
     Introduction,
     Calibration,
     Instructions,
